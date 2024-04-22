@@ -5,7 +5,9 @@ import httpStatus from "http-status";
 class UserController {
     private static instance: UserController; // singleton instance of the controller class
 
-    constructor(private userService: UserService) { }
+    constructor(private userService: UserService) {
+        this.userService = userService;
+    }
 
     public static getInstance(): UserController { // singleton instance of the controller class
         if (!UserController.instance) {
@@ -15,13 +17,14 @@ class UserController {
         return UserController.instance;
     }
 
-    async createUser(req: Request, res: Response) {
+    createUser = async (req: Request, res: Response) => {
         const user = await this.userService.createUser();
 
         return res.status(httpStatus.CREATED).json(user);
     }
 
-    async getUsers(req: Request, res: Response) {
+    getUsers = async (req: Request, res: Response) => {
+        console.log(this)
         const user = await this.userService.getUser();
 
         return res.status(httpStatus.OK).json(user);
