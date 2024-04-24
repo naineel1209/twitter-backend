@@ -2,12 +2,14 @@ import { expressMiddleware } from "@apollo/server/express4";
 import cors from "cors";
 import { config } from "dotenv";
 import express from "express";
+import "express-async-errors";
 import { createServer } from "http";
 import httpStatus from "http-status";
+import "json-bigint-patch";
 import morgan from "morgan";
 import { initApolloServer } from "./config/apollo.config";
 import logger from "./config/winston.config";
-import CustomError from "./errors/custom.error";
+import CustomGQLError from "./errors/custom.error";
 config();
 
 const app = express();
@@ -15,7 +17,9 @@ const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(cors<cors.CorsRequest>());
+app.use(cors<cors.CorsRequest>({
+    origin: "*"
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(morgan("dev", {
@@ -41,23 +45,6 @@ init()
         //start listening to the server
         app.use("/api/v1/graphql", expressMiddleware(apolloServer));
 
-        server.listen(PORT, () => {
-            logger.info(`Server is running on http://localhost:${PORT}`);
-        });
-
-        const interruptHandler = async () => {
-
-            await apolloServer.stop();
-            server.close();
-            logger.info("Server is shutting down");
-            process.exit(0);
-
-        }
-
-        process.on("SIGINT", interruptHandler);
-        process.on("SIGTERM", interruptHandler);
-    })
-    .then(() => {
         //register the not found route and error handler
         app.use("*", (req, res) => {
             return res.status(httpStatus.NOT_FOUND).json({
@@ -66,12 +53,12 @@ init()
             })
         });
 
+        //this will handle all errors except the one thrown by the graphql server
         app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-            if (error instanceof CustomError) {
+            if (error instanceof CustomGQLError) {
                 return res.status(error.statusCode).json({
                     message: error.message,
                     status: error.statusCode,
-                    statusMessage: error.statusMessage,
                     errorStack: (process.env.NODE_ENV === "production") ? "🤫" : error.stack
                 });
             } else {
@@ -82,6 +69,20 @@ init()
                 });
             }
         })
+
+        server.listen(PORT, () => {
+            logger.info(`Server is running on http://localhost:${PORT}`);
+        });
+
+        const interruptHandler = async () => {
+            await apolloServer.stop();
+            server.close();
+            logger.info("Server is shutting down");
+            process.exit(0);
+        }
+
+        process.on("SIGINT", interruptHandler);
+        process.on("SIGTERM", interruptHandler);
     })
     .catch((error) => {
         logger.error(error);

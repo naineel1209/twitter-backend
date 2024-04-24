@@ -1,29 +1,34 @@
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import http from "http";
-import CustomError from "../errors/custom.error";
+import CustomGQLError from "../errors/custom.error";
 import resolvers from "../graphql/resolvers";
 import typeDefs from "../graphql/types";
 import logger from "./winston.config";
 import { config } from "dotenv";
+import { GraphQLError } from "graphql";
 config();
 
 export const initApolloServer = (server: http.Server) => {
     const apolloServer = new ApolloServer({
         typeDefs,
         resolvers,
-        formatError: (error) => {
-            if (error instanceof CustomError) {
-                return {
-                    message: error.message,
-                    statusCode: error.statusCode,
-                    statusMessage: error.statusMessage,
-                    errorStack: (process.env.NODE_ENV === "development") ? error.stack : null,
+
+        //this will handle the errors thrown in the resolvers
+        formatError: (formattedError, error) => {
+            if (error instanceof GraphQLError) {
+                if (error.extensions?.type === "CustomGQLError") {
+                    return {
+                        message: error.message,
+                        extensions: {
+                            statusCode: error.extensions.statusCode,
+                        }
+                    }
                 }
             }
 
-            logger.error(error.message);
-            return error;
+            logger.error(error);
+            return formattedError;
         },
         plugins: [ApolloServerPluginDrainHttpServer({ httpServer: server })],
     });
