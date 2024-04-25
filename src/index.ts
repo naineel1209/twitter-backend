@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { expressMiddleware } from "@apollo/server/express4";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { config } from "dotenv";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import "express-async-errors";
 import { createServer } from "http";
 import httpStatus from "http-status";
@@ -16,7 +15,6 @@ import CustomError from "./errors/custom.error";
 import { CustomContext } from "./graphql/context";
 import { authMiddleware } from "./middleware/auth.middleware";
 import oauthRoutes from "./modules/GoogleAuth/google.routes";
-import ngrok from "@ngrok/ngrok";
 config();
 
 const app = express();
@@ -63,7 +61,7 @@ init()
         app.use("/api/v1/graphql", expressMiddleware<CustomContext>(apolloServer, {
             context: async (context) => {
                 if (context.req.cookies[TWITTER_TOKEN] || context.req.headers.authorization) {
-                    await authMiddleware(context.req, context.res)
+                    await authMiddleware(context.req, context.res);
 
                     return {
                         //@ts-ignore
@@ -89,7 +87,7 @@ init()
         });
 
         //this will handle all errors except the one thrown by the graphql server
-        app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        app.use((error: any, req: Request, res: Response, next: NextFunction) => {
             if (error instanceof CustomError) {
                 return res.status(error.statusCode).json({
                     message: error.message,
@@ -109,7 +107,7 @@ init()
             logger.info(`Server is running on http://localhost:${PORT}`);
         });
 
-        console.log("Ngrok Auth Token: ", process.env.NGROK_AUTH_TOKEN);
+        // console.log("Ngrok Auth Token: ", process.env.NGROK_AUTH_TOKEN);
         // ngrok.connect({
         //     addr: PORT,
         //     authtoken: process.env.NGROK_AUTH_TOKEN

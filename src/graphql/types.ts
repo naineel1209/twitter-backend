@@ -41,7 +41,7 @@ type Mutation {
   createUser(email: String!, password: String!, username: String!,
   name: String,  profilePic: String, bio: String, dob: String): User # Create a new user
   updateUser(id: BigInt!, name: String, username: String, profilePic: String, bio: String, dob: String): User # Update a user
-  createTweet(title: String!, content: String!, userId: BigInt!): Tweet # Create a new tweet
+  createTweet(title: String!, content: String!): Tweet # Create a new tweet
   updateTweet(id: BigInt!, title: String, content: String, published: Boolean, impressions: Int): Tweet # Update a tweet
   deleteTweet(id: BigInt!): Tweet # Delete a tweet
   deleteUser(id: BigInt!): User # Delete a user and all their tweets

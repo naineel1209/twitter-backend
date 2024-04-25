@@ -4,7 +4,9 @@ import { userService } from "../modules/Services/index.service";
 import httpStatus from "http-status";
 import CustomError from "../errors/custom.error";
 
-export const authMiddleware = async (req: Request, res: Response) => {
+export const authMiddleware = async (req: Request, res: Response, next?: NextFunction // next is optional here
+
+) => {
     // @ts-ignore
     const token = req.cookies[TWITTER_TOKEN] || req.headers.authorization?.split(" ")[1] || req.headers.authorization;
 
@@ -20,4 +22,8 @@ export const authMiddleware = async (req: Request, res: Response) => {
 
     //@ts-ignore
     req.user = decodedUser;
+
+    if (next) {
+        next();
+    }
 };

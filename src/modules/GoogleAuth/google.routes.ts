@@ -1,12 +1,15 @@
 import { config } from "dotenv";
 import { Router } from "express";
 import httpStatus from "http-status";
-import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN_EXPIRED_ERROR, TWITTER_TOKEN } from "../../constants/general.constants";
 import { generateRandomUsername } from "../../utils/generate.utils";
 import { userService } from "../Services/index.service";
 import googleService from "./google.service";
+import { authMiddleware } from "../../middleware/auth.middleware";
 config();
+interface RequestWithUser extends Request {
+    user: { [key: string]: any };
+}
 
 const router = Router();
 
@@ -82,5 +85,23 @@ router.get("/callback", async (req, res) => {
         user,
     })
 });
+
+router.get("/logout", authMiddleware, async (req: any, res) => {
+    //revoke the token from the google server
+    //@ts-ignore
+    await googleService.revokeToken(req.user?.user.refreshToken as string)
+
+    //clear the token from the database 
+    const user = await userService.clearToken(req.user?.user.id);
+
+    //clear the token from the client
+    res.clearCookie(TWITTER_TOKEN);
+
+    //send a response
+    return res.status(httpStatus.OK).json({
+        message: "User logged out successfully",
+        status: httpStatus.OK
+    })
+})
 
 export default router;

@@ -2,6 +2,7 @@ import axios from "axios";
 import { config } from "dotenv";
 import CustomError from "../../errors/custom.error";
 import httpStatus from "http-status";
+import { JwtPayload } from "jsonwebtoken";
 config();
 
 class GoogleService {
@@ -24,7 +25,8 @@ class GoogleService {
                 client_id: process.env.OAUTH_CLIENT_ID,
                 client_secret: process.env.OAUTH_CLIENT_SECRET,
                 redirect_uri: process.env.OAUTH_REDIRECT_URI,
-                grant_type: 'authorization_code'
+                grant_type: 'authorization_code',
+                expires_in: 6 * 60 * 60 // 6 hours
             });
 
             return tokenResponse.data;
@@ -33,19 +35,24 @@ class GoogleService {
         }
     };
 
-    async getProfileInfo(accessToken: string) {
+    async checkTokenAlive(accessToken: string | JwtPayload) {
         try {
-            const profileResponse = await axios.get(process.env.OAUTH_PROFILE_ENDPOINT as string, {
+            const { data } = await axios.get(process.env.OAUTH_CHECK_TOKEN_ENDPOINT as string, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
                 }
             });
 
-            return profileResponse.data;
+            if (data.error) {
+                throw new CustomError('Token is not valid', httpStatus.UNAUTHORIZED);
+            } else {
+                return true;
+            };
         } catch (error) {
-            throw new CustomError('Failed to get profile info', httpStatus.INTERNAL_SERVER_ERROR);
+            //TODO: change the errors to custom graphql errors
+            throw new CustomError('Token is not valid', httpStatus.UNAUTHORIZED);
         }
-    };
+    }
 
     async refreshToken(refreshToken: string) {
         try {
@@ -59,6 +66,32 @@ class GoogleService {
             return tokenResponse.data;
         } catch (error) {
             throw new CustomError('Failed to refresh token', httpStatus.INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    async revokeToken(refreshToken: string) {
+        try {
+            await axios.post(process.env.OAUTH_REVOKE_ENDPOINT as string, {
+                token: refreshToken,
+                client_id: process.env.OAUTH_CLIENT_ID,
+                client_secret: process.env.OAUTH_CLIENT_SECRET
+            })
+        } catch (error) {
+            throw new CustomError('Failed to revoke token', httpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    async getProfileInfo(accessToken: string) {
+        try {
+            const profileResponse = await axios.get(process.env.OAUTH_PROFILE_ENDPOINT as string, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            });
+
+            return profileResponse.data;
+        } catch (error) {
+            throw new CustomError('Failed to get profile info', httpStatus.INTERNAL_SERVER_ERROR);
         }
     };
 

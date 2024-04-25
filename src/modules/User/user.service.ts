@@ -3,7 +3,7 @@ import httpStatus from "http-status";
 import CustomError from "../../errors/custom.error";
 import CustomGQLError from "../../errors/custom_gql.error";
 import { CreateUserInput } from "./user.types";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "dotenv";
 import googleService from "../GoogleAuth/google.service";
 import { Request, Response } from "express";
@@ -58,7 +58,17 @@ class UserService {
         });
 
         if (user) {
-            return user;
+            //update the refresh-token for the user
+            const updatedUser = await this.prisma.user.update({
+                where: {
+                    id: user.id
+                },
+                data: {
+                    refreshToken: data.refreshToken
+                }
+            })
+
+            return updatedUser;
         }
 
         const newUser = await this.prisma.user.create({
@@ -97,7 +107,7 @@ class UserService {
             user,
             access_token
         }, process.env.JWT_SECRET as string, {
-            expiresIn: "1m" //expires in 1 minute
+            expiresIn: "6h" //expires in 6 hours
         });
 
         return token;
@@ -107,12 +117,13 @@ class UserService {
         try {
             const verifiedUser = jwt.verify(token, process.env.JWT_SECRET as string);
 
+            //tokenAlive check - 
+            await googleService.checkTokenAlive((verifiedUser as any)["access_token"]);
+
             return verifiedUser;
         } catch (error) {
             try {
                 if (error instanceof Error && error.message === "jwt expired") {
-                    console.log("Error: ", error.message);
-
                     //get the refresh token from the database for the user
                     const decodedUser = jwt.decode(token) as any;
                     const user = await this.prisma.user.findUnique({
@@ -136,7 +147,7 @@ class UserService {
                         user,
                         access_token: newAccessToken.access_token
                     }, process.env.JWT_SECRET as string, {
-                        expiresIn: "1m"
+                        expiresIn: "6h"
                     });
 
                     // @ts-ignore
@@ -156,6 +167,29 @@ class UserService {
                 throw err
             }
         }
+    }
+
+    async clearToken(id: number) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                id
+            }
+        });
+
+        if (!user) {
+            throw new CustomError("User not found", httpStatus.NOT_FOUND);
+        }
+
+        const updatedUser = await this.prisma.user.update({
+            where: {
+                id
+            },
+            data: {
+                refreshToken: null
+            }
+        });
+
+        return updatedUser;
     }
 }
 

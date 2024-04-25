@@ -1,4 +1,4 @@
-interface CustomContextUser {
+export interface CustomContextUser {
     id: string;
     email: string;
     password?: string;

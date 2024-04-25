@@ -21,7 +21,4 @@
             "./src/types.d.ts"
         ]
     },
-    "files": [
-        "src/types.d.ts"
-    ]
 }
