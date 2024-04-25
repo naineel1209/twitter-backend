@@ -1,7 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import CustomGQLError from "../../errors/custom.error";
+import CustomGQLError from "../../errors/custom_gql.error";
 import httpStatus from "http-status";
 import { CreateUserInput } from "./user.types";
+import CustomError from "../../errors/custom.error";
 
 class UserService {
     private static instance: UserService;
@@ -40,6 +41,30 @@ class UserService {
         }
 
         return user;
+    }
+
+    async createUserGoogle(data: CreateUserInput) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: data.email
+            }
+        });
+
+        if (user) {
+            return user;
+        }
+
+        const newUser = await this.prisma.user.create({
+            data: {
+                ...data,
+            }
+        })
+
+        if (!newUser) {
+            throw new CustomError("User not created", httpStatus.INTERNAL_SERVER_ERROR)
+        }
+
+        return newUser;
     }
 
     async createUser(data: CreateUserInput) {

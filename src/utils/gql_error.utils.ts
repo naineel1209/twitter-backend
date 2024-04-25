@@ -1,5 +1,5 @@
 import httpStatus from "http-status";
-import CustomGQLError from "./custom.error";
+import CustomGQLError from "../errors/custom_gql.error";
 
 type ResolverFunc = (parent: any, args: any, context: any, info: any) => any;
 

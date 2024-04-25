@@ -9,7 +9,8 @@ import "json-bigint-patch";
 import morgan from "morgan";
 import { initApolloServer } from "./config/apollo.config";
 import logger from "./config/winston.config";
-import CustomGQLError from "./errors/custom.error";
+import CustomGQLError from "./errors/custom_gql.error";
+import oauthRoutes from "./modules/GoogleAuth/google.routes";
 config();
 
 const app = express();
@@ -31,6 +32,15 @@ app.use(morgan("dev", {
 app.get("/", (req, res) => {
     return res.send("Hello World");
 });
+
+app.get("/health", (req, res) => {
+    return res.status(httpStatus.OK).json({
+        message: "Server is running",
+        status: httpStatus.OK
+    });
+});
+
+app.use("/google-oauth", oauthRoutes)
 
 
 const init = async () => {

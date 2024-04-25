@@ -1,7 +1,7 @@
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import http from "http";
-import CustomGQLError from "../errors/custom.error";
+import CustomGQLError from "../errors/custom_gql.error";
 import resolvers from "../graphql/resolvers";
 import typeDefs from "../graphql/types";
 import logger from "./winston.config";

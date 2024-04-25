@@ -1,17 +1,15 @@
-import { GraphQLError, GraphQLErrorExtensions } from "graphql";
+import httpStatus from "http-status";
 
-class CustomGQLError extends GraphQLError {
-    public extensions: GraphQLErrorExtensions;
+class CustomError extends Error {
+    public statusMessage: string;
 
-    constructor(public message: string, public statusCode: number, extensions: GraphQLErrorExtensions = {}) {
+    constructor(public message: string, public statusCode: number) {
         super(message);
         this.statusCode = statusCode;
-        this.extensions = {
-            ...extensions,
-            type: "CustomGQLError",
-            statusCode,
-        }
-    }
-}
 
-export default CustomGQLError;
+        const statusMessageIndex = `${statusCode}_MESSAGE`;
+        this.statusMessage = (httpStatus as any)[statusMessageIndex]
+    }
+};
+
+export default CustomError;

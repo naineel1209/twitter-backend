@@ -1,5 +1,5 @@
 import { GraphQLBigInt, GraphQLDateTimeISO } from "graphql-scalars";
-import { gqlUtilityErrorFunc } from "../errors/graphql.errors";
+import { gqlUtilityErrorFunc } from "../utils/gql_error.utils";
 import { tweetsService, userService } from "../modules/Services/index.service";
 import { CreateUserInput } from "../modules/User/user.types";
 

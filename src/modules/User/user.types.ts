@@ -1,11 +1,13 @@
 export interface CreateUserInput {
     email: string;
-    password: string;
+    password?: string;
     username: string;
     name?: string;
     profilePic?: string;
     bio?: string;
     dob?: string;
+    refreshToken?: string;
+    googleId?: string;
 }
 
 export interface IUser {
