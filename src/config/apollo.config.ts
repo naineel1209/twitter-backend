@@ -1,16 +1,16 @@
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { config } from "dotenv";
+import { GraphQLError } from "graphql";
 import http from "http";
-import CustomGQLError from "../errors/custom_gql.error";
 import resolvers from "../graphql/resolvers";
 import typeDefs from "../graphql/types";
 import logger from "./winston.config";
-import { config } from "dotenv";
-import { GraphQLError } from "graphql";
+import { CustomContext } from "../graphql/context";
 config();
 
 export const initApolloServer = (server: http.Server) => {
-    const apolloServer = new ApolloServer({
+    const apolloServer = new ApolloServer<CustomContext>({
         typeDefs,
         resolvers,
 

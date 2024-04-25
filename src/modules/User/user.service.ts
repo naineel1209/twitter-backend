@@ -1,8 +1,15 @@
 import { PrismaClient } from "@prisma/client";
-import CustomGQLError from "../../errors/custom_gql.error";
 import httpStatus from "http-status";
-import { CreateUserInput } from "./user.types";
 import CustomError from "../../errors/custom.error";
+import CustomGQLError from "../../errors/custom_gql.error";
+import { CreateUserInput } from "./user.types";
+import jwt from "jsonwebtoken";
+import { config } from "dotenv";
+import googleService from "../GoogleAuth/google.service";
+import { Request, Response } from "express";
+import { TWITTER_TOKEN } from "../../constants/general.constants";
+import ts from "typescript";
+config();
 
 class UserService {
     private static instance: UserService;
@@ -81,6 +88,74 @@ class UserService {
         }
 
         return user;
+    }
+
+    async generateToken(data: { user: any, access_token: string }): Promise<string> {
+        const { user, access_token } = data;
+
+        const token = jwt.sign({
+            user,
+            access_token
+        }, process.env.JWT_SECRET as string, {
+            expiresIn: "1m" //expires in 1 minute
+        });
+
+        return token;
+    }
+
+    async verifyToken(req: Request, res: Response, token: string): Promise<any> {
+        try {
+            const verifiedUser = jwt.verify(token, process.env.JWT_SECRET as string);
+
+            return verifiedUser;
+        } catch (error) {
+            try {
+                if (error instanceof Error && error.message === "jwt expired") {
+                    console.log("Error: ", error.message);
+
+                    //get the refresh token from the database for the user
+                    const decodedUser = jwt.decode(token) as any;
+                    const user = await this.prisma.user.findUnique({
+                        where: {
+                            id: decodedUser.user.id
+                        }
+                    });
+
+                    if (!user) {
+                        throw new CustomError("User not found", httpStatus.NOT_FOUND);
+                    }
+
+                    if (!user.refreshToken) {
+                        throw new CustomError("User not authenticated", httpStatus.UNAUTHORIZED);
+                    }
+
+                    //generate a new access token using the refresh token from the database
+                    const newAccessToken = await googleService.refreshToken(user.refreshToken);
+
+                    const newToken = jwt.sign({
+                        user,
+                        access_token: newAccessToken.access_token
+                    }, process.env.JWT_SECRET as string, {
+                        expiresIn: "1m"
+                    });
+
+                    // @ts-ignore
+                    res.cookie(TWITTER_TOKEN, newToken, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === "production",
+                        sameSite: "strict",
+                        maxAge: 1000 * 60 * 60 * 24 * 7 //expires in 7 days
+                    });
+
+                    return {
+                        user,
+                        access_token: newAccessToken.access_token
+                    }
+                }
+            } catch (err) {
+                throw err
+            }
+        }
     }
 }
 

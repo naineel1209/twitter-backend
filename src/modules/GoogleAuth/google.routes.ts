@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { Router } from "express";
 import httpStatus from "http-status";
 import jwt from "jsonwebtoken";
+import { ACCESS_TOKEN_EXPIRED_ERROR, TWITTER_TOKEN } from "../../constants/general.constants";
 import { generateRandomUsername } from "../../utils/generate.utils";
 import { userService } from "../Services/index.service";
 import googleService from "./google.service";
@@ -41,7 +42,7 @@ router.get("/callback", async (req, res) => {
     const { access_token, refresh_token, error: accessTokenError } = tokenResponse;
 
     if (accessTokenError) {
-        if (accessTokenError === "token_expired") {
+        if (accessTokenError === ACCESS_TOKEN_EXPIRED_ERROR) {
             return res.status(httpStatus.UNAUTHORIZED).json({
                 message: "Token expired",
                 status: httpStatus.UNAUTHORIZED
@@ -64,17 +65,13 @@ router.get("/callback", async (req, res) => {
         googleId: sub as string,
     });
 
-    const jwtToken = jwt.sign({
-        user,
-        access_token,
-    }, process.env.JWT_SECRET as string, {
-        expiresIn: "1d",
-    })
+    const jwtToken = await userService.generateToken({ user, access_token: access_token as string })
 
-    res.cookie("twitter-token", jwtToken, {
+    res.cookie(TWITTER_TOKEN, jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict"
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000 //expires in 1 minute
     })
 
     return res.status(httpStatus.OK).json({
@@ -84,6 +81,6 @@ router.get("/callback", async (req, res) => {
         refresh_token,
         user,
     })
-})
+});
 
 export default router;

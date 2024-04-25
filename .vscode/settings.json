@@ -1,0 +1,22 @@
+{
+    "workbench.colorCustomizations": {
+        "editorLineNumber.activeForeground": "#ff0000",
+        "editorLineNumber.foreground": "#ffffff",
+        "[Just Black]": {
+            // change the color of comments
+            "editor.lineHighlightBackground": "#000000",
+            "editor.selectionBackground": "#135564",
+            "editor.selectionHighlightBackground": "#ff000000",
+        },
+    },
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "comment",
+                "settings": {
+                    "foreground": "#ffffff94",
+                },
+            },
+        ],
+    },
+}

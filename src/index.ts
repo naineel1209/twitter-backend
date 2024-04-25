@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { expressMiddleware } from "@apollo/server/express4";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import { config } from "dotenv";
 import express from "express";
@@ -9,8 +11,12 @@ import "json-bigint-patch";
 import morgan from "morgan";
 import { initApolloServer } from "./config/apollo.config";
 import logger from "./config/winston.config";
-import CustomGQLError from "./errors/custom_gql.error";
+import { TWITTER_TOKEN } from "./constants/general.constants";
+import CustomError from "./errors/custom.error";
+import { CustomContext } from "./graphql/context";
+import { authMiddleware } from "./middleware/auth.middleware";
 import oauthRoutes from "./modules/GoogleAuth/google.routes";
+import ngrok from "@ngrok/ngrok";
 config();
 
 const app = express();
@@ -28,19 +34,20 @@ app.use(morgan("dev", {
         write: (message) => logger.info(message.trim())
     }
 }));
+app.use(cookieParser())
 
-app.get("/", (req, res) => {
+app.get("/api/v1", (req: express.Request, res: express.Response) => {
     return res.send("Hello World");
 });
 
-app.get("/health", (req, res) => {
+app.get("/api/v1/health", (req, res) => {
     return res.status(httpStatus.OK).json({
         message: "Server is running",
         status: httpStatus.OK
     });
 });
 
-app.use("/google-oauth", oauthRoutes)
+app.use("/api/v1/google-oauth", oauthRoutes)
 
 
 const init = async () => {
@@ -51,9 +58,27 @@ const init = async () => {
 }
 
 init()
-    .then((apolloServer) => {
+    .then(async (apolloServer) => {
         //start listening to the server
-        app.use("/api/v1/graphql", expressMiddleware(apolloServer));
+        app.use("/api/v1/graphql", expressMiddleware<CustomContext>(apolloServer, {
+            context: async (context) => {
+                if (context.req.cookies[TWITTER_TOKEN] || context.req.headers.authorization) {
+                    await authMiddleware(context.req, context.res)
+
+                    return {
+                        //@ts-ignore
+                        user: context.req.user?.user,
+                        //@ts-ignore
+                        access_token: context.req.user?.access_token
+                    }
+                } else {
+                    return {
+                        user: null,
+                        access_token: null
+                    }
+                }
+            }
+        }));
 
         //register the not found route and error handler
         app.use("*", (req, res) => {
@@ -65,7 +90,7 @@ init()
 
         //this will handle all errors except the one thrown by the graphql server
         app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-            if (error instanceof CustomGQLError) {
+            if (error instanceof CustomError) {
                 return res.status(error.statusCode).json({
                     message: error.message,
                     status: error.statusCode,
@@ -83,6 +108,15 @@ init()
         server.listen(PORT, () => {
             logger.info(`Server is running on http://localhost:${PORT}`);
         });
+
+        console.log("Ngrok Auth Token: ", process.env.NGROK_AUTH_TOKEN);
+        // ngrok.connect({
+        //     addr: PORT,
+        //     authtoken: process.env.NGROK_AUTH_TOKEN
+        // })
+        //     .then((listener) => {
+        //         console.log(`Server is running on ${listener.url()}`)
+        //     })
 
         const interruptHandler = async () => {
             await apolloServer.stop();

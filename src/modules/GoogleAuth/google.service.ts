@@ -1,5 +1,7 @@
 import axios from "axios";
 import { config } from "dotenv";
+import CustomError from "../../errors/custom.error";
+import httpStatus from "http-status";
 config();
 
 class GoogleService {
@@ -16,36 +18,48 @@ class GoogleService {
     }
 
     async getTokenUsingCode(code: string) {
-        const tokenResponse = await axios.post(process.env.OAUTH_TOKEN_ENDPOINT as string, {
-            code,
-            client_id: process.env.OAUTH_CLIENT_ID,
-            client_secret: process.env.OAUTH_CLIENT_SECRET,
-            redirect_uri: process.env.OAUTH_REDIRECT_URI,
-            grant_type: 'authorization_code'
-        });
+        try {
+            const tokenResponse = await axios.post(process.env.OAUTH_TOKEN_ENDPOINT as string, {
+                code,
+                client_id: process.env.OAUTH_CLIENT_ID,
+                client_secret: process.env.OAUTH_CLIENT_SECRET,
+                redirect_uri: process.env.OAUTH_REDIRECT_URI,
+                grant_type: 'authorization_code'
+            });
 
-        return tokenResponse.data;
+            return tokenResponse.data;
+        } catch (error) {
+            throw new CustomError('Failed to get token using code', httpStatus.INTERNAL_SERVER_ERROR);
+        }
     };
 
     async getProfileInfo(accessToken: string) {
-        const profileResponse = await axios.get(process.env.OAUTH_PROFILE_ENDPOINT as string, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
-        });
+        try {
+            const profileResponse = await axios.get(process.env.OAUTH_PROFILE_ENDPOINT as string, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            });
 
-        return profileResponse.data;
+            return profileResponse.data;
+        } catch (error) {
+            throw new CustomError('Failed to get profile info', httpStatus.INTERNAL_SERVER_ERROR);
+        }
     };
 
     async refreshToken(refreshToken: string) {
-        const tokenResponse = await axios.post(process.env.OAUTH_TOKEN_ENDPOINT as string, {
-            refresh_token: refreshToken,
-            client_id: process.env.OAUTH_CLIENT_ID,
-            client_secret: process.env.OAUTH_CLIENT_SECRET,
-            grant_type: 'refresh_token'
-        }); //this will return a new access token
+        try {
+            const tokenResponse = await axios.post(process.env.OAUTH_TOKEN_ENDPOINT as string, {
+                refresh_token: refreshToken,
+                client_id: process.env.OAUTH_CLIENT_ID,
+                client_secret: process.env.OAUTH_CLIENT_SECRET,
+                grant_type: 'refresh_token'
+            }); //this will return a new access token
 
-        return tokenResponse.data;
+            return tokenResponse.data;
+        } catch (error) {
+            throw new CustomError('Failed to refresh token', httpStatus.INTERNAL_SERVER_ERROR);
+        }
     };
 
     async getRedirectUrl() {

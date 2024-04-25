@@ -6,7 +6,7 @@ scalar BigInt
 type User {
   id: BigInt!
   email: String!
-  password: String! # You might not expose this publicly for security reasons
+  password: String # You might not expose this publicly for security reasons
   name: String
   username: String!
   profilePic: String
