@@ -18,7 +18,7 @@ const resolvers = {
             return await userService.getUserById(args.id)
         }),
         getTweets: gqlUtilityErrorFunc(async (parent: any, args: any, context: any, info: any) => {
-            return await tweetsService.getTweets()
+            return await tweetsService.getTweets(context.user)
         }),
         getTweet: gqlUtilityErrorFunc(async (parent: any, args: any, context: any, info: any) => {
             return await tweetsService.getTweetById(args.id)
@@ -35,6 +35,37 @@ const resolvers = {
             } else {
                 return await tweetsService.createTweet(args, context.user)
             }
+        }),
+        updateUser: gqlUtilityErrorFunc(async (parent: any, args: any, context: any, info: any) => {
+            const { id, ...restArgs } = args;
+
+            if (context.user === null || context.access_token == null) {
+                throw new CustomGQLError("Unauthorized", httpStatus.UNAUTHORIZED)
+            }
+
+            if (BigInt(context.user.id) !== id) {
+                throw new CustomGQLError("Unauthorized", httpStatus.UNAUTHORIZED)
+            }
+
+            return await userService.updateUser(id, restArgs)
+        }),
+        updateTweet: gqlUtilityErrorFunc(async (parent: any, args: any, context: any, info: any) => {
+            const { id, ...restArgs } = args;
+
+            if (context.user === null || context.access_token == null) {
+                throw new CustomGQLError("Unauthorized", httpStatus.UNAUTHORIZED)
+            }
+
+            restArgs.userId = context.user.id;
+
+            return await tweetsService.updateTweet(id, restArgs)
+        }),
+        deleteTweet: gqlUtilityErrorFunc(async (parent: any, args: any, context: any, info: any) => {
+            if (context.user === null || context.access_token == null) {
+                throw new CustomGQLError("Unauthorized", httpStatus.UNAUTHORIZED)
+            }
+
+            return await tweetsService.deleteTweet(args.id, context.user)
         })
     },
     Tweet: {
@@ -43,7 +74,7 @@ const resolvers = {
         }
     },
     User: {
-        tweets: async (parent: any, args: any, context: any, info: any) => {
+        Post: async (parent: any, args: any, context: any, info: any) => {
             return await tweetsService.getTweetsByUserId(parent.id)
         }
     }

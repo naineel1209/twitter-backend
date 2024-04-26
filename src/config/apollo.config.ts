@@ -7,6 +7,7 @@ import resolvers from "../graphql/resolvers";
 import typeDefs from "../graphql/types";
 import logger from "./winston.config";
 import { CustomContext } from "../graphql/context";
+import CustomError from "../errors/custom.error";
 config();
 
 export const initApolloServer = (server: http.Server) => {
@@ -22,6 +23,19 @@ export const initApolloServer = (server: http.Server) => {
                         message: error.message,
                         extensions: {
                             statusCode: error.extensions.statusCode,
+                        }
+                    }
+                }
+            }
+
+            if (error instanceof GraphQLError) {
+                const customError = error.originalError as CustomError;
+
+                if (customError.type === "CustomError") {
+                    return {
+                        message: customError.message,
+                        extensions: {
+                            statusCode: customError.statusCode,
                         }
                     }
                 }

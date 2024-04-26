@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import httpStatus from "http-status";
 import CustomError from "../../errors/custom.error";
 import CustomGQLError from "../../errors/custom_gql.error";
-import { CreateUserInput } from "./user.types";
+import { CreateUserInput, UpdateUserInput } from "./user.types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "dotenv";
 import googleService from "../GoogleAuth/google.service";
@@ -29,7 +29,11 @@ class UserService {
     }
 
     async getUsers() {
-        const users = await this.prisma.user.findMany();
+        const users = await this.prisma.user.findMany({
+            where: {
+                isDeleted: false
+            }
+        });
 
         return (users.length > 0) ? users : [];
     }
@@ -37,8 +41,9 @@ class UserService {
     async getUserById(id: string) {
         const user = await this.prisma.user.findUnique({
             where: {
-                id: Number(id)
-            }
+                id: Number(id),
+                isDeleted: false
+            },
         });
 
         if (!user) {
@@ -61,12 +66,17 @@ class UserService {
             //update the refresh-token for the user
             const updatedUser = await this.prisma.user.update({
                 where: {
-                    id: user.id
+                    id: user.id,
+                    isDeleted: false,
                 },
                 data: {
                     refreshToken: data.refreshToken
                 }
             })
+
+            if (!updatedUser) {
+                throw new CustomError("User not updated", httpStatus.INTERNAL_SERVER_ERROR);
+            }
 
             return updatedUser;
         }
@@ -98,6 +108,59 @@ class UserService {
         }
 
         return user;
+    }
+
+    async updateUser(id: bigint, data: UpdateUserInput) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                id,
+                isDeleted: false
+            }
+        });
+
+        if (!user) {
+            throw new CustomGQLError("User not found", httpStatus.NOT_FOUND, {
+                message: "User not found",
+            });
+        }
+
+        const updatedUser = await this.prisma.user.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                ...data
+            }
+        })
+
+        return updatedUser;
+    }
+
+    //! DO NOT USE THIS METHOD IN PRODUCTION
+    async deleteUser(id: bigint) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                id,
+                isDeleted: false
+            }
+        });
+
+        if (!user) {
+            throw new CustomGQLError("User not found", httpStatus.NOT_FOUND, {
+                message: "User not found",
+            });
+        }
+
+        const deletedUser = await this.prisma.user.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                isDeleted: true
+            }
+        })
+
+        return deletedUser;
     }
 
     async generateToken(data: { user: any, access_token: string }): Promise<string> {
@@ -166,6 +229,8 @@ class UserService {
             } catch (err) {
                 throw err
             }
+
+            throw error;
         }
     }
 

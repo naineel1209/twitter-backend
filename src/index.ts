@@ -1,4 +1,3 @@
-import { expressMiddleware } from "@apollo/server/express4";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { config } from "dotenv";
@@ -10,11 +9,9 @@ import "json-bigint-patch";
 import morgan from "morgan";
 import { initApolloServer } from "./config/apollo.config";
 import logger from "./config/winston.config";
-import { TWITTER_TOKEN } from "./constants/general.constants";
 import CustomError from "./errors/custom.error";
-import { CustomContext } from "./graphql/context";
-import { authMiddleware } from "./middleware/auth.middleware";
 import oauthRoutes from "./modules/GoogleAuth/google.routes";
+import { expressGqlMiddleware } from "./middleware/express.gql.middleware";
 config();
 
 const app = express();
@@ -58,25 +55,7 @@ const init = async () => {
 init()
     .then(async (apolloServer) => {
         //start listening to the server
-        app.use("/api/v1/graphql", expressMiddleware<CustomContext>(apolloServer, {
-            context: async (context) => {
-                if (context.req.cookies[TWITTER_TOKEN] || context.req.headers.authorization) {
-                    await authMiddleware(context.req, context.res);
-
-                    return {
-                        //@ts-ignore
-                        user: context.req.user?.user,
-                        //@ts-ignore
-                        access_token: context.req.user?.access_token
-                    }
-                } else {
-                    return {
-                        user: null,
-                        access_token: null
-                    }
-                }
-            }
-        }));
+        app.use("/api/v1/graphql", expressGqlMiddleware(apolloServer));
 
         //register the not found route and error handler
         app.use("*", (req, res) => {

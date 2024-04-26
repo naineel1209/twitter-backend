@@ -13,7 +13,7 @@ type User {
   bio: String
   dob: Date
   createdAt: Date
-  tweets: [Tweet] # Relationship with Tweet
+  Post: [Tweet] # Relationship with Tweet
 }
 
 # Define the type for Tweet with fields and relationships

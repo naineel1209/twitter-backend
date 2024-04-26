@@ -49,7 +49,6 @@ class GoogleService {
                 return true;
             };
         } catch (error) {
-            //TODO: change the errors to custom graphql errors
             throw new CustomError('Token is not valid', httpStatus.UNAUTHORIZED);
         }
     }

@@ -80,6 +80,7 @@ router.get("/callback", async (req, res) => {
     return res.status(httpStatus.OK).json({
         message: "User authenticated successfully",
         status: httpStatus.OK,
+        jwtToken,
         access_token,
         refresh_token,
         user,
