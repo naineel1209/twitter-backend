@@ -1,13 +1,10 @@
-import UserService from "../User/user.service";
+import prismaClient from "../../config/prisma.config";
 import TweetsService from "../Tweets/tweets.service";
-import { PrismaClient } from "@prisma/client";
+import UserService from "../User/user.service";
 
-const prisma = new PrismaClient();
-
-const userService = UserService.getInstance(prisma);
-const tweetsService = TweetsService.getInstance(prisma);
+const userService = UserService.getInstance(prismaClient);
+const tweetsService = TweetsService.getInstance(prismaClient);
 
 export {
-    userService,
-    tweetsService,
-}
+    tweetsService, userService
+};
