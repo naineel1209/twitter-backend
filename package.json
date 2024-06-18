@@ -40,6 +40,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.12.7",
     "prisma": "^5.12.1",
+    "prisma-generator-fake-data": "^0.14.2",
     "typescript": "^5.4.5"
   }
 }

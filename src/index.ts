@@ -48,7 +48,7 @@ app.use("/api/v1/google-oauth", oauthRoutes)
 const init = async () => {
     const apolloServer = initApolloServer(server);
     await apolloServer.start();
-
+    console.log("Apollo Server started")
     return apolloServer;
 }
 
@@ -67,6 +67,7 @@ init()
 
         //this will handle all errors except the one thrown by the graphql server
         app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+                console.log(error);
             if (error instanceof CustomError) {
                 return res.status(error.statusCode).json({
                     message: error.message,
