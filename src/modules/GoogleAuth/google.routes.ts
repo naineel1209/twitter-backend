@@ -13,7 +13,7 @@ interface RequestWithUser extends Request {
 
 const router = Router();
 
-//!Path - /google-oauth
+//!Path - /api/v1/google-oauth
 
 router.get("/", async (req, res) => {
     const redirectUrl = await googleService.getRedirectUrl();
@@ -92,7 +92,7 @@ router.get("/logout", authMiddleware, async (req: any, res) => {
     //@ts-ignore
     await googleService.revokeToken(req.user?.user.refreshToken as string)
 
-    //clear the token from the database 
+    //clear the token from the database
     const user = await userService.clearToken(req.user?.user.id);
 
     //clear the token from the client

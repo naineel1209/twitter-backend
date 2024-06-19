@@ -1,17 +1,18 @@
-import { ApolloServer } from "@apollo/server";
-import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { config } from "dotenv";
-import { GraphQLError } from "graphql";
-import http from "http";
-import resolvers from "../graphql/resolvers";
-import typeDefs from "../graphql/types";
-import logger from "./winston.config";
-import { CustomContext } from "../graphql/context";
-import CustomError from "../errors/custom.error";
+import {ApolloServer} from '@apollo/server';
+import {ApolloServerPluginDrainHttpServer} from '@apollo/server/plugin/drainHttpServer';
+import {config} from 'dotenv';
+import {GraphQLError} from 'graphql';
+import http from 'http';
+import resolvers from '../graphql/resolvers';
+import typeDefs from '../graphql/types';
+import logger from './winston.config';
+import {CustomContext} from '../graphql/context';
+import CustomError from '../errors/custom.error';
+
 config();
 
 export const initApolloServer = (server: http.Server) => {
-    const apolloServer = new ApolloServer<CustomContext>({
+    return new ApolloServer<CustomContext>({
         typeDefs,
         resolvers,
 
@@ -44,8 +45,6 @@ export const initApolloServer = (server: http.Server) => {
             logger.error(error);
             return formattedError;
         },
-        plugins: [ApolloServerPluginDrainHttpServer({ httpServer: server })],
+        plugins: [ApolloServerPluginDrainHttpServer({httpServer: server})],
     });
-
-    return apolloServer;
 }
