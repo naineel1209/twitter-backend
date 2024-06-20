@@ -1,5 +1,5 @@
 services:
-  database:
+  postgresdb:
     image: postgres:16
     container_name: postgres_db
     environment:
@@ -12,3 +12,25 @@ services:
 #      ./data - path to the folder on the host machine where the database data will be stored
 #      /var/lib/postgresql/data - path to the folder in the container where the database data will be stored
         - ./data:/var/lib/postgresql/data
+    networks:
+      - "twitter-svc-network"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      timeout: 20s
+      retries: 10
+  twitter-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twitter-svc
+    ports:
+      - "4747:4747"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    networks:
+      - "twitter-svc-network"
+networks:
+  twitter-svc-network:
+    driver: bridge
+    external: false
