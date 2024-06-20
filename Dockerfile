@@ -4,7 +4,7 @@ ENV NAME twitter-backend
 
 # Use host.docker.internal to refer to the host machine from within the container
 # TODO remove hardcoded values
-ENV DATABASE_URL postgres://postgres:123456@postgresdb:5432/twitter-backend
+ENV DATABASE_URL postgres://postgresdb:<your_postgres_password>@postgresdb:5432/twitter-backend
 
 # Create the application directory
 RUN mkdir /${NAME}
